@@ -87,5 +87,7 @@ target/
 __pycache__/
 local_settings.py
 
-.env*
+.env
+.env-tests
+.envrc
 db.sqlite3
