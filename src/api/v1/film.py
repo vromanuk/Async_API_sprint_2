@@ -73,7 +73,7 @@ async def film_list(
             }
         }
 
-    return await film_service.get_list(es_query)
+    return await film_service.list(es_query)
 
 
 @router.get(
@@ -84,7 +84,7 @@ async def film_list(
 )
 @cached(decoder=Film)
 async def film_details(film_id: str, film_service: FilmService = Depends(get_film_service)) -> Film:  # noqa B008
-    film = await film_service.get_by_id(film_id)
+    film = await film_service.get(film_id)
     if not film:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found")
 

@@ -61,7 +61,7 @@ async def people_list(
             }
         }
 
-    return await person_service.get_list(es_query)
+    return await person_service.list(es_query)
 
 
 @router.get(
@@ -74,7 +74,7 @@ async def people_list(
 async def person_details(
     person_id: str, person_service: PersonService = Depends(get_person_service)  # noqa B008
 ) -> Person:
-    person = await person_service.get_by_id(person_id)
+    person = await person_service.get(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="person not found")
 

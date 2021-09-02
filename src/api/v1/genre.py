@@ -60,7 +60,7 @@ async def genre_list(
             }
         }
 
-    return await genre_service.get_list(es_query)
+    return await genre_service.list(es_query)
 
 
 @router.get(
@@ -71,7 +71,7 @@ async def genre_list(
 )
 @cached(decoder=Genre)
 async def genre_details(genre_id: str, genre_service: GenreService = Depends(get_genre_service)) -> Genre:  # noqa B008
-    genre = await genre_service.get_by_id(genre_id)
+    genre = await genre_service.get(genre_id)
     if not genre:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="genre not found")
 
