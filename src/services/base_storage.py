@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+import backoff
+from elasticsearch import ElasticsearchException
+
 
 class BaseStorage(ABC):
     def __init__(self, db):
@@ -16,6 +19,12 @@ class BaseStorage(ABC):
 
 
 class ElasticsearchStorage(BaseStorage):
+    @backoff.on_exception(
+        backoff.expo,
+        ElasticsearchException,
+        max_tries=3,
+        jitter=backoff.random_jitter,
+    )
     async def get_all(self, query: Optional[dict] = None, index: Optional[str] = None):
         return await self.db.search(
             index=index,
@@ -26,6 +35,12 @@ class ElasticsearchStorage(BaseStorage):
             _source=query["_source"],
         )
 
+    @backoff.on_exception(
+        backoff.expo,
+        ElasticsearchException,
+        max_tries=3,
+        jitter=backoff.random_jitter,
+    )
     async def get_scalar(self, entity_id: str, index: Optional[str] = None):
         return await self.db.get(index, entity_id)
 
