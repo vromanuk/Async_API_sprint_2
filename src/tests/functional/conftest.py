@@ -10,6 +10,7 @@ from httpx import AsyncClient
 from multidict import CIMultiDictProxy
 
 from src.db import elastic, redis
+from src.db.redis import get_redis
 from src.main import app
 from src.tests.functional.factories import MovieFactory
 from src.tests.functional.settings import TestSettings, get_settings
@@ -63,6 +64,13 @@ async def setup(settings: TestSettings):
 @pytest.fixture(scope="session")
 async def settings():
     return get_settings()
+
+
+@pytest.fixture
+async def cache_client():
+    redis_client = get_redis()
+    yield redis_client
+    await redis_client.clear()
 
 
 @pytest.fixture(scope="session")

@@ -1,11 +1,13 @@
 import asyncio
 from http import HTTPStatus
 
+import orjson
 import pytest
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from httpx import AsyncClient
 
 from src.models.film import Film
+from src.services.base_cache import RedisCache
 from src.tests.functional.constants import FILM_LIST_URL
 from src.tests.functional.factories import MovieFactory
 from src.tests.functional.utils.es_helpers import populate_es_from_factory
@@ -97,3 +99,31 @@ async def test_film_list_search(client: AsyncClient, es_client: AsyncElasticsear
 
     assert response.status_code == HTTPStatus.OK
     assert any(movies[0].title in film["title"] for film in resp_json)
+
+
+async def test_film_list_from_cache(client: AsyncClient, cache_client: RedisCache):
+    movies = [MovieFactory.create() for _ in range(10)]
+    cache_key = ":asc:id:1:50"
+    await cache_client.cache(cache_key, orjson.dumps([entity.dict() for entity in movies]))
+    # Fetch data from cache
+    response = await client.get(FILM_LIST_URL)
+    resp_json = response.json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert resp_json != []
+    assert len(resp_json) == len(movies)
+    assert all(isinstance(Film.parse_obj(film), Film) for film in resp_json)
+
+
+async def test_film_details_from_cache(client: AsyncClient, cache_client: RedisCache, movie: Film):
+    film_details_url = f"/films/{movie.id}"
+    cache_key = f"film:{movie.id}"
+    await cache_client.cache(cache_key, movie.json())
+    # Fetch data from cache
+    response = await client.get(film_details_url)
+    film: Film = Film.parse_obj(response.json())
+
+    assert response.status_code == HTTPStatus.OK
+    assert film.title == movie.title
+    assert film.type == movie.type
+    assert isinstance(film, Film)
