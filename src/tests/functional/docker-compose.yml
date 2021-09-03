@@ -32,14 +32,14 @@ services:
       ELASTICSEARCH_HOSTS: '["http://es01:9200"]'
 
   web:
-    image: async_api_sprint_2
-    build: ../../../
+    image: async_api_sprint_2_web
+    build: ../../
     depends_on:
       - es01
       - redis
 
   tests:
-    image: async_api_sprint_2
+    image: async_api_sprint_2_web
     command: bash -c "/app/src/tests/functional/scripts/wait_to_start.sh && pytest /app/src/tests/functional/src"
     depends_on:
       - es01

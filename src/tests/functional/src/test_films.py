@@ -1,3 +1,4 @@
+import asyncio
 from http import HTTPStatus
 
 import pytest
@@ -16,6 +17,7 @@ pytestmark = pytest.mark.asyncio
 async def test_film_list(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = [MovieFactory.create() for _ in range(10)]
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
+    await asyncio.sleep(0.5)
     # Fetch data from elastic
     response = await client.get(FILM_LIST_URL)
     resp_json = response.json()
@@ -68,6 +70,7 @@ async def test_film_list_wrong_order_field(client: AsyncClient, es_client: Async
 async def test_film_list_limit(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = sorted([MovieFactory.create() for _ in range(10)], key=lambda movie: movie.id)
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
+    await asyncio.sleep(0.5)
 
     response = await client.get(f"{FILM_LIST_URL}?page=1&limit=2")
     resp_json = response.json()
@@ -87,6 +90,7 @@ async def test_film_list_limit(client: AsyncClient, es_client: AsyncElasticsearc
 async def test_film_list_search(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = [MovieFactory.create() for _ in range(10)]
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
+    await asyncio.sleep(0.5)
 
     response = await client.get(f"{FILM_LIST_URL}?search_query={movies[0].title}")
     resp_json = response.json()
