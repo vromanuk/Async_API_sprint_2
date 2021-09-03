@@ -68,7 +68,14 @@ async def film_list(
                 "multi_match": {
                     "query": search_query,
                     "fuzziness": 1,
-                    "fields": ["title^5", "description^4", "genre^3", "actors_names^3", "writers_names^2", "director"],
+                    "fields": [
+                        "title^5",
+                        "description^4",
+                        "genre^3",
+                        "actors_names^3",
+                        "writers_names^2",
+                        "director",
+                    ],
                 }
             }
         }

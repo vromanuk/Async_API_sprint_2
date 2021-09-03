@@ -1,8 +1,7 @@
-from asyncio import sleep
 from http import HTTPStatus
 
 import pytest
-from elasticsearch import NotFoundError, AsyncElasticsearch
+from elasticsearch import AsyncElasticsearch, NotFoundError
 from httpx import AsyncClient
 
 from src.models.film import Film

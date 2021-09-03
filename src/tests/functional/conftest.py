@@ -45,6 +45,7 @@ def event_loop():
 async def movie():
     return MovieFactory.create()
 
+
 @pytest.fixture(scope="session")
 async def es_client(settings: TestSettings):
     client = AsyncElasticsearch(hosts=settings.es_host)

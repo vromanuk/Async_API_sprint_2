@@ -56,10 +56,6 @@ class MovieFactory(BaseFactory):
             rating=cls.faker.random_int(3, 10),
             type=cls.faker.type(),
             uuid=cls.faker.uuid4(),
-            genres=[
-                GenreFactory.create() for _ in range(random.randint(1, 3))
-            ],
-            people=[
-                PersonFactory.create() for _ in range(random.randint(1, 3))
-            ],
+            genres=[GenreFactory.create() for _ in range(random.randint(1, 3))],
+            people=[PersonFactory.create() for _ in range(random.randint(1, 3))],
         )
