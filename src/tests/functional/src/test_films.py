@@ -1,9 +1,9 @@
-import asyncio
 from http import HTTPStatus
+from unittest.mock import patch
 
 import orjson
 import pytest
-from elasticsearch import AsyncElasticsearch, NotFoundError
+from elasticsearch import AsyncElasticsearch
 from httpx import AsyncClient
 
 from src.models.film import Film
@@ -19,14 +19,12 @@ pytestmark = pytest.mark.asyncio
 async def test_film_list(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = [MovieFactory.create() for _ in range(10)]
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
-    await asyncio.sleep(0.5)
     # Fetch data from elastic
     response = await client.get(FILM_LIST_URL)
     resp_json = response.json()
 
     assert response.status_code == HTTPStatus.OK
     assert resp_json != []
-    assert all(isinstance(Film.parse_obj(film), Film) for film in resp_json)
 
 
 async def test_film_details(client: AsyncClient, es_client: AsyncElasticsearch, movie: Film):
@@ -39,16 +37,12 @@ async def test_film_details(client: AsyncClient, es_client: AsyncElasticsearch, 
     assert response.status_code == HTTPStatus.OK
     assert film.title == movie.title
     assert film.type == movie.type
-    assert isinstance(film, Film)
 
 
-async def test_film_details_404(client: AsyncClient, es_client: AsyncElasticsearch, movie: Film):
-    await populate_es_from_factory(es_client=es_client, entities=[movie], index="movies")
-
+async def test_film_details_404(client: AsyncClient):
     film_details_url = "/films/-1"
-    with pytest.raises(NotFoundError):
-        response = await client.get(film_details_url)
-        assert response.status_code == HTTPStatus.NOT_FOUND
+    response = await client.get(film_details_url)
+    assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 async def test_film_list_wrong_sort_field(client: AsyncClient, es_client: AsyncElasticsearch, movie: Film):
@@ -69,19 +63,23 @@ async def test_film_list_wrong_order_field(client: AsyncClient, es_client: Async
     assert "value is not a valid enumeration member" in resp_json["detail"][0]["msg"]
 
 
-async def test_film_list_limit(client: AsyncClient, es_client: AsyncElasticsearch):
+async def test_film_list_limit_page_1(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = sorted([MovieFactory.create() for _ in range(10)], key=lambda movie: movie.id)
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
-    await asyncio.sleep(0.5)
 
-    response = await client.get(f"{FILM_LIST_URL}?page=1&limit=2")
+    response = await client.get(f"{FILM_LIST_URL}?sort_order=asc&sort=id&page=1&limit=2")
     resp_json = response.json()
 
     assert response.status_code == HTTPStatus.OK
     assert len(resp_json) == 2
     assert resp_json[0]["title"] == movies[0].title
 
-    response = await client.get(f"{FILM_LIST_URL}?page=2&limit=2")
+
+async def test_film_list_limit_page_2(client: AsyncClient, es_client: AsyncElasticsearch):
+    movies = sorted([MovieFactory.create() for _ in range(10)], key=lambda movie: movie.id)
+    await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
+
+    response = await client.get(f"{FILM_LIST_URL}?sort_order=asc&sort=id&page=2&limit=2")
     resp_json = response.json()
 
     assert response.status_code == HTTPStatus.OK
@@ -92,7 +90,6 @@ async def test_film_list_limit(client: AsyncClient, es_client: AsyncElasticsearc
 async def test_film_list_search(client: AsyncClient, es_client: AsyncElasticsearch):
     movies = [MovieFactory.create() for _ in range(10)]
     await populate_es_from_factory(es_client=es_client, entities=movies, index="movies")
-    await asyncio.sleep(0.5)
 
     response = await client.get(f"{FILM_LIST_URL}?search_query={movies[0].title}")
     resp_json = response.json()
@@ -101,7 +98,8 @@ async def test_film_list_search(client: AsyncClient, es_client: AsyncElasticsear
     assert any(movies[0].title in film["title"] for film in resp_json)
 
 
-async def test_film_list_from_cache(client: AsyncClient, cache_client: RedisCache):
+@patch("src.services.film.get_film_service")
+async def test_film_list_from_cache(mock_service, client: AsyncClient, cache_client: RedisCache):
     movies = [MovieFactory.create() for _ in range(10)]
     cache_key = ":asc:id:1:50"
     await cache_client.cache(cache_key, orjson.dumps([entity.dict() for entity in movies]))
@@ -112,10 +110,11 @@ async def test_film_list_from_cache(client: AsyncClient, cache_client: RedisCach
     assert response.status_code == HTTPStatus.OK
     assert resp_json != []
     assert len(resp_json) == len(movies)
-    assert all(isinstance(Film.parse_obj(film), Film) for film in resp_json)
+    mock_service.assert_not_called()
 
 
-async def test_film_details_from_cache(client: AsyncClient, cache_client: RedisCache, movie: Film):
+@patch("src.services.film.get_film_service")
+async def test_film_details_from_cache(mock_service, client: AsyncClient, cache_client: RedisCache, movie: Film):
     film_details_url = f"/films/{movie.id}"
     cache_key = f"film:{movie.id}"
     await cache_client.cache(cache_key, movie.json())
@@ -126,4 +125,4 @@ async def test_film_details_from_cache(client: AsyncClient, cache_client: RedisC
     assert response.status_code == HTTPStatus.OK
     assert film.title == movie.title
     assert film.type == movie.type
-    assert isinstance(film, Film)
+    mock_service.assert_not_called()

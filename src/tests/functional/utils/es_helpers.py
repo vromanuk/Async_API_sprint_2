@@ -1,3 +1,5 @@
+import asyncio
+
 from elasticsearch import AsyncElasticsearch
 
 
@@ -11,3 +13,4 @@ async def populate_es_from_factory(es_client: AsyncElasticsearch, entities: list
         body.append(entity.json())
 
     await es_client.bulk(index=index, doc_type="doc", body=body)
+    await asyncio.sleep(0.5)

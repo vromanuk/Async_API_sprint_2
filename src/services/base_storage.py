@@ -3,6 +3,7 @@ from typing import Optional
 
 import backoff
 from elasticsearch import ElasticsearchException
+from elasticsearch.exceptions import NotFoundError
 
 
 class BaseStorage(ABC):
@@ -42,4 +43,7 @@ class ElasticsearchStorage(BaseStorage):
         jitter=backoff.random_jitter,
     )
     async def get_scalar(self, entity_id: str, index: Optional[str] = None):
-        return await self.db.get(index, entity_id)
+        try:
+            return await self.db.get(index, entity_id)
+        except NotFoundError:
+            return None
