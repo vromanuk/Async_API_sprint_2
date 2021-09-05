@@ -10,7 +10,9 @@ from httpx import AsyncClient
 from multidict import CIMultiDictProxy
 
 from src.db import elastic, redis
+from src.db.redis import get_redis
 from src.main import app
+from src.tests.functional.factories import MovieFactory
 from src.tests.functional.settings import TestSettings, get_settings
 
 
@@ -40,6 +42,11 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture
+async def movie():
+    return MovieFactory.create()
+
+
 @pytest.fixture(scope="session")
 async def es_client(settings: TestSettings):
     client = AsyncElasticsearch(hosts=settings.es_host)
@@ -57,6 +64,13 @@ async def setup(settings: TestSettings):
 @pytest.fixture(scope="session")
 async def settings():
     return get_settings()
+
+
+@pytest.fixture
+async def cache_client():
+    redis_client = get_redis()
+    yield redis_client
+    await redis_client.clear()
 
 
 @pytest.fixture(scope="session")
@@ -78,6 +92,6 @@ async def populate_es(es_client):
 
 
 @pytest.fixture(scope="session")
-async def client(setup, settings: TestSettings, populate_es):
+async def client(setup, settings: TestSettings):
     async with AsyncClient(app=app, base_url=settings.base_url) as async_client:
         yield async_client

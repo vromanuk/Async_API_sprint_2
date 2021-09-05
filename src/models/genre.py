@@ -7,7 +7,7 @@ from src.utils import orjson_dumps
 
 
 class Genre(BaseModel):
-    id: str
+    id: int
     genre: str
     created: datetime.datetime
     modified: datetime.datetime

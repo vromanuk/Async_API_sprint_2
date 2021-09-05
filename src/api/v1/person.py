@@ -40,7 +40,10 @@ async def people_list(
     person_service: PersonService = Depends(get_person_service),  # noqa B008
 ) -> list[Person]:
     sort_value = sort.value
-    if sort_value in [SortFieldPerson.FIRST_NAME.value, SortFieldPerson.LAST_NAME.value]:
+    if sort_value in [
+        SortFieldPerson.FIRST_NAME.value,
+        SortFieldPerson.LAST_NAME.value,
+    ]:
         sort_value = f"{sort_value}.raw"
 
     es_query = {
@@ -61,7 +64,7 @@ async def people_list(
             }
         }
 
-    return await person_service.get_list(es_query)
+    return await person_service.list(es_query)
 
 
 @router.get(
@@ -72,9 +75,10 @@ async def people_list(
 )
 @cached(decoder=Person)
 async def person_details(
-    person_id: str, person_service: PersonService = Depends(get_person_service)  # noqa B008
+    person_id: str,
+    person_service: PersonService = Depends(get_person_service),  # noqa B008
 ) -> Person:
-    person = await person_service.get_by_id(person_id)
+    person = await person_service.get(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="person not found")
 

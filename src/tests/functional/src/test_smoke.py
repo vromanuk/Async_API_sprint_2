@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 from httpx import AsyncClient
 
@@ -6,5 +8,5 @@ from httpx import AsyncClient
 async def test_smoke(client: AsyncClient):
     response = await client.get("/smoke/")
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"msg": "OK"}

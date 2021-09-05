@@ -17,7 +17,7 @@ class MovieType(str, Enum):
 
 
 class Film(BaseModel):
-    id: str
+    id: int
     title: str
     description: str
     creation_date: datetime.datetime
